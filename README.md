@@ -1,6 +1,6 @@
-# Obsidian Productivity Index (OBN-PI)
+# Obsidian Productivity Index (obn-pi)
 
-A lightweight macOS tool that tracks your Obsidian writing productivity and generates a composite score based on word output, writing depth, and consistency.
+A lightweight macOS CLI tool that tracks your Obsidian writing productivity and generates a composite score based on word output, writing depth, and consistency.
 
 ## The Index
 
@@ -8,15 +8,36 @@ A lightweight macOS tool that tracks your Obsidian writing productivity and gene
 Productivity Index = (Word Score × 0.4) + (Depth Score × 0.3) + (Consistency Score × 0.3)
 ```
 
-### Component Breakdown
+| Component | Weight | Formula |
+|-----------|--------|---------|
+| **Word Score** | 40% | `(words today / your avg) × 100` |
+| **Depth Score** | 30% | `(avg para length / your avg) × 100` |
+| **Consistency Score** | 30% | `(streak days / target) × 100` |
 
-| Component | Weight | What it measures | Formula |
-|-----------|--------|------------------|---------|
-| **Word Score** | 40% | Output volume vs your baseline | `(words today / your avg words) × 100` |
-| **Depth Score** | 30% | Paragraph length vs your average | `(avg para length / your avg para) × 100` |
-| **Consistency Score** | 30% | Writing streak vs your target | `(current streak / target days) × 100` |
+## Install
 
-### Scoring
+```bash
+git clone https://github.com/brookcerise/obn-productivity-tracker.git
+cd obn-productivity-tracker
+./install.sh /path/to/your/obsidian/vault
+```
+
+Add `~/.local/bin` to your PATH if not already there:
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+## Commands
+
+```bash
+obn-pi                  # Today's productivity summary
+obn-pi status           # Service status, vault info, history stats
+obn-pi plot             # 7-day TUI bar chart
+obn-pi 2026-03-15       # Score for a specific date
+obn-pi uninstall        # Remove the service
+```
+
+## Scoring
 
 | PI Range | Rating |
 |----------|--------|
@@ -27,75 +48,34 @@ Productivity Index = (Word Score × 0.4) + (Depth Score × 0.3) + (Consistency S
 | 1–49 | MINIMAL |
 | 0 | NO ACTIVITY |
 
-## Quick Start
-
-```bash
-# Install (sets up daily macOS service)
-./install.sh /path/to/your/obsidian/vault
-
-# Manual run — today's summary
-python3 obn_pi.py /path/to/vault
-
-# Check a specific date
-python3 obn_pi.py /path/to/vault --date 2026-03-15
-```
-
 ## How It Works
 
-1. **Scans** all `.md` files in your vault modified on the target day
-2. **Strips** frontmatter, code blocks, and wikilinks (counts only prose)
-3. **Calculates** word count, average paragraph length, and files modified
-4. **Compares** against rolling 14-day baselines (auto-updates)
-5. **Logs** to `~/.obn_pi_log.md` and `~/.obn_pi_history.json`
+1. Scans all `.md` files in your vault modified on the target day
+2. Strips frontmatter, code blocks, and wikilinks (counts prose only)
+3. Calculates word count, average paragraph length, files modified
+4. Compares against rolling 14-day baselines (auto-adjusts after 3+ days)
+5. Logs to `~/.obn-pi/log.md` and `~/.obn-pi/history.json`
+
+## Service
+
+The installer creates a macOS LaunchAgent that runs daily at 23:55.
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.obn.productivity-tracker.plist    # start
+launchctl unload ~/Library/LaunchAgents/com.obn.productivity-tracker.plist  # stop
+```
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `~/.obn_pi_config.json` | Baselines, targets, paths |
-| `~/.obn_pi_history.json` | Daily analysis history |
-| `~/.obn_pi_log.md` | Human-readable daily log |
-| `~/Library/Logs/obn_pi.log` | Service stdout |
-
-## Service Management
-
-The installer creates a macOS LaunchAgent that runs daily at 23:55.
-
-```bash
-# Stop the service
-launchctl unload ~/Library/LaunchAgents/com.obn.productivity-tracker.plist
-
-# Start the service
-launchctl load ~/Library/LaunchAgents/com.obn.productivity-tracker.plist
-
-# Uninstall completely
-./install.sh --uninstall
-```
-
-## Configuration
-
-Edit `~/.obn_pi_config.json` to customize:
-
-```json
-{
-  "target_streak_days": 5,
-  "word_baseline": 1000,
-  "avg_paragraph_length": 80,
-  "vault_dir": "/path/to/vault",
-  "history_file": "~/.obn_pi_history.json"
-}
-```
-
-- **target_streak_days**: Days per week you want to write (affects consistency score)
-- **word_baseline**: Your typical words per session (auto-adjusts after 3+ days)
-- **avg_paragraph_length**: Your typical paragraph length (auto-adjusts after 3+ days)
+| `~/.obn-pi/config.json` | Baselines, targets, vault path |
+| `~/.obn-pi/history.json` | Daily analysis history |
+| `~/.obn-pi/log.md` | Human-readable daily log |
+| `~/.local/share/obn-pi/obn_pi.py` | Installed script |
 
 ## Requirements
 
 - macOS (for the LaunchAgent service)
 - Python 3.8+
 - An Obsidian vault (or any directory with markdown files)
-
-## License
-
-MIT
